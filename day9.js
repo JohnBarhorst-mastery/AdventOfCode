@@ -2012,9 +2012,20 @@ const sample = [
     ['R', 2]
 ];
 
+const sample2 = [
+    ['R', 5],
+    ['U', 8],
+    ['L', 8],
+    ['D', 3],
+    ['R', 17],
+    ['D', 10],
+    ['L', 25],
+    ['U', 20]
+]
+
 // If the head is ever two steps directly up, down, left, or right from the tail, the tail must also move one step in that direction so it remains close enough
 // Otherwise, if the head and tail aren't touching and aren't in the same row or column, the tail always moves one step diagonally to keep up
-// After simulating the rope, you can count up all of the positions the tail visited at least once. In this diagram, s again marks the starting position (which the tail also visited) and # marks other positions the tail visited
+// After simulating the rope, you can count up all of the positions the tail visited at least once. 
 // So, there are 13 positions the tail visited at least once.
 // Simulate your complete hypothetical series of motions. How many positions does the tail of the rope visit at least once?
 
@@ -2022,51 +2033,180 @@ const sample = [
 
 // log x and y
 // x = l r, y = u d
-// way to create new tail positions: name after xy coordinate '00' '01' etc
 
-// how to move one step diagonally? 
-// 1 to each x and y
-// but which way?
 
 
 function trackMoves(moves) {
     const moveResult = {
-        'R': ({ x, y }) => ({ x: x + 1, y }),
-        'L': ({ x, y }) => ({ x: x - 1, y }),
-        'U': ({ x, y }) => ({ x, y: y + 1 }),
-        'D': ({ x, y }) => ({ x, y: y - 1 }),
+        'R': ({ x, y }) => { return { x: x + 1, y } },
+        'L': ({ x, y }) => { return { x: x - 1, y } },
+        'U': ({ x, y }) => { return { x, y: y + 1 } },
+        'D': ({ x, y }) => { return { x, y: y - 1 } },
         'UR': ({ x, y }) => ({ x: x + 1, y: y + 1 }),
         'UL': ({ x, y }) => ({ x: x - 1, y: y + 1 }),
         'DR': ({ x, y }) => ({ x: x + 1, y: y - 1 }),
-        'DL': ({ x, y }) => ({ x: x + 1, y: y - 1 })
+        'DL': ({ x, y }) => ({ x: x - 1, y: y - 1 })
+    }
+    function difference(head, tail) {
+        return {
+            xdiff: Math.abs(head.x - tail.x),
+            ydiff: Math.abs(head.y - tail.y)
+        }
     }
 
-    let H = { x: 0, y: 0 };
-    let T = { x: 0, y: 0 };
-    let touched = [];
+    function handleTail(head, tail) {
+        const spaceLimit = 2;
+        const hOffset = { x: head.x - tail.x, y: head.y - tail.y }
+        let move = '';
+        // Tried with including the heads move to inform the tail, sample worked but input failed.
+        // Same issue with setting the non-2 spaced value to same as head.
+        const { xdiff, ydiff } = difference(head, tail);
+        // if touching, don't need to move.
+        const isTouching = (xdiff < spaceLimit) && (ydiff < spaceLimit);
+        if (isTouching) return tail;
 
-    function handleVisit({ x, y }) {
-        const spot = `${String(x)}${String(y)}`;
-        if (touched.includes(spot)) {
-            return;
+        if (ydiff > 0) {
+            if (hOffset.y < 0) {
+                move = move + 'D'
+            } else {
+                move = move + 'U'
+            }
+        }
+
+        if (xdiff > 0) {
+            if (hOffset.x < 0) {
+                move = move + 'L'
+            } else {
+                move = move + 'R'
+            }
+        }
+
+        return moveResult[move](tail);
+    }
+
+    function handleVisit({ x, y }, touched) {
+        const newTouched = [...touched];
+        const spot = `x:${String(x)}, y:${String(y)}`;
+        if (newTouched.includes(spot)) {
+            return newTouched
         } else {
-            return touched.push(spot);
+            newTouched.push(spot);
+            return newTouched;
         }
     }
-    // pass in H
-    // now we need rules for the TAIL
-    function handleTail({ x, y }) {
-
-    }
-
-    moves.forEach(([direction, move]) => {
-        // gotta move one at a time to determine tail path
-        for (let i = 0; i < move; i++) {
-            H = moveResult[direction](i);
-
-
-
+    const tailMoves = moves.reduce((acc, [move, dist]) => {
+        let head = acc.head;
+        let tail = acc.tail;
+        let visited = acc.visited;
+        for (let i = 0; i < dist; i++) {
+            head = moveResult[move](head);
+            tail = handleTail(head, tail);
+            visited = handleVisit(tail, visited);
         }
-
-    })
+        return {
+            head, tail, visited
+        }
+    }, { head: { x: 0, y: 0 }, tail: { x: 0, y: 0 }, visited: [] })
+    return tailMoves;
 }
+
+// const answer = trackMoves(input);
+// console.log(answer.visited.length);
+// // 6223 is wrong
+// // 6266 TADA
+
+function trackKnots(moves, knots) {
+    const moveResult = {
+        'R': ({ x, y }) => { return { x: x + 1, y } },
+        'L': ({ x, y }) => { return { x: x - 1, y } },
+        'U': ({ x, y }) => { return { x, y: y + 1 } },
+        'D': ({ x, y }) => { return { x, y: y - 1 } },
+        'UR': ({ x, y }) => ({ x: x + 1, y: y + 1 }),
+        'UL': ({ x, y }) => ({ x: x - 1, y: y + 1 }),
+        'DR': ({ x, y }) => ({ x: x + 1, y: y - 1 }),
+        'DL': ({ x, y }) => ({ x: x - 1, y: y - 1 })
+    }
+    function difference(head, tail) {
+        return {
+            xdiff: Math.abs(head.x - tail.x),
+            ydiff: Math.abs(head.y - tail.y)
+        }
+    }
+
+    function generateKnots(knots) {
+        let arr = [];
+        for (let i = 0; i < knots; i++) {
+            arr.push({ x: 0, y: 0 });
+        }
+        return arr;
+    }
+
+    function handleKnot(prev, curr) {
+        const spaceLimit = 2;
+        const hOffset = { x: prev.x - curr.x, y: prev.y - curr.y }
+        let move = '';
+        const { xdiff, ydiff } = difference(prev, curr);
+        // if touching, don't need to move.
+        const isTouching = (xdiff < spaceLimit) && (ydiff < spaceLimit);
+        if (isTouching) return curr;
+
+        if (ydiff > 0) {
+            if (hOffset.y < 0) {
+                move = move + 'D'
+            } else {
+                move = move + 'U'
+            }
+        }
+
+        if (xdiff > 0) {
+            if (hOffset.x < 0) {
+                move = move + 'L'
+            } else {
+                move = move + 'R'
+            }
+        }
+
+        return moveResult[move](curr);
+    }
+
+    function handleVisit({ x, y }, touched) {
+        const newTouched = [...touched];
+        const spot = `x:${String(x)}, y:${String(y)}`;
+        if (newTouched.includes(spot)) {
+            return newTouched
+        } else {
+            newTouched.push(spot);
+            return newTouched;
+        }
+    }
+    const tailMoves = moves.reduce((acc, [move, dist]) => {
+        let knots = acc.knots;
+        let visited = acc.visited;
+
+        for (let i = 0; i < dist; i++) {
+            // handle and track each segment, in this case, 9
+            let lastKnot;
+            const movedKnots = knots.map((knot, i) => {
+                let result;
+                if (i === 0) {
+                    result = moveResult[move](knot);
+                } else {
+                    result = handleKnot(lastKnot, knot);
+                }
+                lastKnot = result;
+                return result;
+
+            })
+            knots = movedKnots;
+            visited = handleVisit(movedKnots[movedKnots.length - 1], visited);
+        }
+        return {
+            knots, visited
+        }
+    }, { knots: generateKnots(knots), visited: [] })
+    return tailMoves;
+}
+
+const answer2 = trackKnots(input, 10);
+console.log(answer2.visited.length);
+// H is still H, now 9 knots, 9 is Tail.

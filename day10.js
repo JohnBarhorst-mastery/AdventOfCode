@@ -1,3 +1,5 @@
+const jsonfile = require('jsonfile');
+
 const input = [
     "noop",
     "noop",
@@ -336,14 +338,22 @@ function runProgram(inputs) {
         cycle: 0,
         tasks: [],
         strengthLog: [],
-        xLog: []
+        xLog: [],
+        pixelRow: 0,
+        pixels: {}
     }
 
-    // clock circuit, ticks constant rate, each tick is a cycle;
-    // addx takes 2 cycles
-    // This means a cycle runs without parsing a new command!
-    // registerX + addx value
-    // noop takes 1 cycle, no effect
+    function handlePixelWrite() {
+        // 0-39, 6 times.
+        // 40 pixels per row.
+        const writePosition = state.cycle - (40 * state.pixelRow) - 1;
+        const shouldWrite = state.registerX === writePosition ||
+            state.registerX === writePosition + 1 ||
+            state.registerX === writePosition - 1;
+        state.pixels[state.pixelRow].push(`${shouldWrite ? '#' : '.'}`);
+
+    }
+
     function handleCycle(task) {
         state.cycle = state.cycle + 1;
         if (logCycles.includes(state.cycle)) {
@@ -351,6 +361,9 @@ function runProgram(inputs) {
         }
         state.xLog.push(state.registerX);
 
+        if (!state.pixels[state.pixelRow]) state.pixels[state.pixelRow] = [];
+        handlePixelWrite();
+        if (state.cycle % 40 === 0) state.pixelRow = state.pixelRow + 1;
 
         if (task !== 'addx' && task !== 'noop') {
             const value = parseInt(task);
@@ -367,13 +380,11 @@ function runProgram(inputs) {
     }
 
     inputs.forEach(input => handleCommand(input));
+
     return state;
 }
 
 const answers = runProgram(input);
-// const sum = answers.strengthLog.reduce((sum, val) => sum + val, 0);
-console.log(answers.xLog.length);
-
 // Part 2
 
 // xRegister is the middle pixel, sprite is 3 pixels wide
@@ -382,3 +393,6 @@ console.log(answers.xLog.length);
 // 1 pixel per cycle
 // light pixel = #, dark = .
 
+jsonfile.writeFile('day10.json', answers.pixels, { flag: 'a' }, (err) => {
+    if (err) console.log(err)
+});

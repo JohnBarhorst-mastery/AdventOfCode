@@ -137,15 +137,38 @@ const sample = {
 
 
 // 20 rounds, 2 most active monkeys, number of items inspected * each other
+function gcd(a, b) {
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+function getlcm(arr) {
+    const n = arr.length
+    let ans = arr[0];
+
+    // ans contains LCM of arr[0], ..arr[i]
+    // after i'th iteration,
+    for (let i = 1; i < n; i++)
+        ans = (((arr[i] * ans)) /
+            (gcd(arr[i], ans)));
+
+    return ans;
+}
 
 function monkeyBusiness(monkeys, rounds) {
     const monkeyState = { ...monkeys };
-    // monKEYS
     const monKEYS = Object.keys(monkeyState);
     monKEYS.forEach(monKEY => monkeyState[monKEY].inspectedCount = 0);
+    const dividers = monKEYS.map(key => monkeyState[key].test.divisibleBy);
+
+    const lcm = getlcm(dividers);
+    console.log(lcm);
 
     function processRelief(worry) {
-        return Math.floor(worry / 3);
+        // Pt 1
+        // return Math.floor(worry / 3);
+        return Math.floor(worry % lcm);
     }
 
     function handleMonkey(monkey) {
@@ -165,7 +188,7 @@ function monkeyBusiness(monkeys, rounds) {
     return monkeyState;
 }
 
-const monkeyResults = monkeyBusiness(input, 20);
+const monkeyResults = monkeyBusiness(input, 10000);
 const order = Object.keys(monkeyResults)
     .map(monkey => monkeyResults[monkey].inspectedCount)
     .sort((a, b) => b - a);

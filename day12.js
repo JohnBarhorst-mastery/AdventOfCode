@@ -97,8 +97,6 @@ function createGraphData(arr) {
     }, { mappedArray: [], sCoord: { x: 0, y: 0 }, eCoord: { x: 0, y: 0 } })
 }
 
-const { mappedArray, sCoord, eCoord } = createGraphData(input);
-
 function heuristic(position0, position1) {
     let d1 = Math.abs(position1.x - position0.x);
     let d2 = Math.abs(position1.y - position0.y);
@@ -134,12 +132,9 @@ function setConnections(mappedArray) {
     }, [])
 }
 
-const graphWithConnections = setConnections(mappedArray);
-
 function aStar(tree, start, end) {
     let openList = [];
     let closedList = [];
-    let path = [];
     const startItem = tree[start.y][start.x];
     const endItem = tree[end.y][end.x];
     // Set starting point
@@ -148,14 +143,16 @@ function aStar(tree, start, end) {
     while (openList.length > 0) {
         let lowestIndex = 0;
 
-        for (let i = 0; i < openList.length; i++) {
-            if (openList[i].f < openList[lowestIndex].f) {
+        openList.forEach(({ f }, i) => {
+            if (f < openList[lowestIndex].f) {
                 lowestIndex = i;
             }
-        };
+        });
+
         let current = openList[lowestIndex];
 
         if (current === endItem) {
+            let path = [];
             let temp = current;
             path.push(temp);
             while (temp.parent) {
@@ -185,10 +182,47 @@ function aStar(tree, start, end) {
             }
         })
     }
+    console.log('Path not found for start', start);
     return [];
 }
 
-const answer = aStar(graphWithConnections, sCoord, eCoord);
-const mappedPath = answer.map(point => [point.y, point.x]);
-console.log(mappedPath);
-console.log(answer.length - 1);
+function getAnswer1(input) {
+    const { mappedArray, sCoord, eCoord } = createGraphData(input);
+    const graphWithConnections = setConnections(mappedArray);
+    const answer = aStar(graphWithConnections, sCoord, eCoord);
+    return answer.length - 1;
+}
+
+// Part 2 need to find the closest starting point with height a.
+// convoluted way of getting around reference issues:
+function getAllACoords(input) {
+    const { mappedArray } = createGraphData(input);
+    return mappedArray.reduce((acc, row) => {
+        row.forEach(({ l, x, y }) => {
+            if (l === 'a') {
+                acc.push({ x, y });
+            }
+        })
+        return acc;
+    }, []);
+}
+
+function getAnswer2(input) {
+    const arrayOfAs = getAllACoords(input);
+    const answerArray = arrayOfAs.map(aCoords => {
+        const { mappedArray, eCoord } = createGraphData(input);
+        const graphWithConnections = setConnections(mappedArray);
+        const answer = aStar(graphWithConnections, aCoords, eCoord);
+        return answer.length - 1;
+    })
+    return answerArray.filter(num => num > 0).reduce((acc, curr) => acc > curr ? curr : acc);
+}
+// Part 1 success!
+const answer1 = getAnswer1(input);
+const answer2 = getAnswer2(input);
+console.log('Answer 1:', answer1);
+
+console.log(answer2);
+console.log(input.length)
+
+// console.log(getAllACoords(sample));

@@ -104,8 +104,7 @@ function heuristic(position0, position1) {
 }
 
 function canMove(location, destination) {
-    if (location.height + 1 >= destination.height) return true;
-    return false;
+    return location.height + 1 >= destination.height
 }
 
 function setConnections(mappedArray) {

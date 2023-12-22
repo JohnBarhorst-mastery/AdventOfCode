@@ -76,19 +76,25 @@ console.log(reducedInput)
 
 // part 2
 
-const minumums = parsedInput.reduce((acc, game) => {
-    const obj = acc;
-    game.hands.forEach((hand) => {
-        const keys = Object.keys(hand);
-        keys.forEach((key) => {
-            if (!obj[key]) {
-                obj[key] = hand[key];
-            } else if (obj[key] > hand[key]) {
-                obj[key] = hand[key];
-            }
-        });
-        return obj;
-    });
-})
+function getGameMinimums(game) {
+    let minimumCubes = {};
+    game.hands.forEach(hand => {
 
-console.log(minumums)
+        for (const color in hand) {
+            if (!minimumCubes[color]) {
+                minimumCubes[color] = hand[color]
+            } else if (minimumCubes[color] < hand[color]) {
+                minimumCubes[color] = hand[color]
+            }
+        }
+    });
+    return minimumCubes;
+}
+
+function getPowerOfCubes(hand) {
+    return Object.values(hand).reduce((acc, curr) => acc * curr, 1);
+}
+
+const minimums = parsedInput.map(game => getGameMinimums(game));
+const power = minimums.map(hand => getPowerOfCubes(hand)).reduce((acc, power) => acc + power, 0);
+console.log(power)
